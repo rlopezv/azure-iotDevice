@@ -1,6 +1,6 @@
-<project 
-	xmlns="http://maven.apache.org/POM/4.0.0" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.rlopezv.miot.cciot</groupId>
 	<artifactId>azure-iot-device</artifactId>
@@ -14,6 +14,8 @@
 		<commons-lang3.version>3.8.1</commons-lang3.version>
 		<junit.version>4.12</junit.version>
 		<azure.version>1.16.0</azure.version>
+		<azure-iothub.version>1.0.11</azure-iothub.version>
+		<azure-eventhubs.version>2.2.0</azure-eventhubs.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -22,6 +24,21 @@
 				<groupId>com.microsoft.azure.sdk.iot</groupId>
 				<artifactId>iot-device-client</artifactId>
 				<version>${azure.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.microsoft.azure</groupId>
+				<artifactId>azure-eventhubs</artifactId>
+				<version>${azure-eventhubs.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.microsoft.azure</groupId>
+				<artifactId>azure-eventhubs-eph</artifactId>
+				<version>${azure-eventhubs.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.microsoft.azure.iothub-java-client</groupId>
+				<artifactId>iothub-java-service-client</artifactId>
+				<version>${azure-iothub.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.slf4j</groupId>
@@ -58,6 +75,18 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.microsoft.azure.iothub-java-client</groupId>
+			<artifactId>iothub-java-service-client</artifactId>
+		</dependency>
+			<dependency>
+				<groupId>com.microsoft.azure</groupId>
+				<artifactId>azure-eventhubs-eph</artifactId>
+			</dependency>
+			<dependency>
+				<groupId>com.microsoft.azure.iothub-java-client</groupId>
+				<artifactId>iothub-java-service-client</artifactId>
+			</dependency>
 	</dependencies>
 	<build>
 		<plugins>
