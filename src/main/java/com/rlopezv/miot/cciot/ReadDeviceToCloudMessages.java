@@ -1,8 +1,6 @@
 package com.rlopezv.miot.cciot;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -11,6 +9,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.microsoft.azure.eventhubs.ConnectionStringBuilder;
 import com.microsoft.azure.eventhubs.EventData;
 import com.microsoft.azure.eventhubs.EventHubClient;
@@ -18,18 +19,22 @@ import com.microsoft.azure.eventhubs.EventHubException;
 import com.microsoft.azure.eventhubs.EventHubRuntimeInformation;
 import com.microsoft.azure.eventhubs.EventPosition;
 import com.microsoft.azure.eventhubs.PartitionReceiver;
+import com.rlopezv.miot.cciot.util.PropertiesUtil;
 
 public class ReadDeviceToCloudMessages {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReadDeviceToCloudMessages.class);
+	private static final PropertiesUtil config = new PropertiesUtil();
+
 	// az iot hub show --query properties.eventHubEndpoints.events.endpoint --name {your IoT Hub name}
-	private static final String eventHubsCompatibleEndpoint = "sb://ihsuprodamres002dednamespace.servicebus.windows.net/";
+	private static final String EVENTHUB_COMTAPIBLE_ENPOINT = "EVENTHUB_COMTAPIBLE_ENPOINT";
 
 	// az iot hub show --query properties.eventHubEndpoints.events.path --name {your IoT Hub name}
-	private static final String eventHubsCompatiblePath = "iothub-ehub-iothub-rlv-1384107-c7cc0d5020";
+	private static final String EVENTHUB_COMPATIBLE_PATH = "EVENTHUB_COMPATIBLE_PATH";
 
 	// az iot hub policy show --name iothubowner --query primaryKey --hub-name {your IoT Hub name}
-	private static final String iotHubSasKey = "Pp/0AdlXDDOaelMLyYq4mLtk+PrmHmDdSve2LXUDFv4=";
-	private static final String iotHubSasKeyName = "iothubowner";
+	private static final String IOT_HUB_SAS_KEY = "IOT_HUB_SAS_KEY";
+	private static final String IOT_HUB_SAS_KEY_NAME = "IOT_HUB_SAS_KEY_NAME";
 
 	// Track all the PartitionReciever instances created.
 	private static ArrayList<PartitionReceiver> receivers = new ArrayList<PartitionReceiver>();
@@ -46,8 +51,8 @@ public class ReadDeviceToCloudMessages {
 		// the time the receiver is created. Typically, you don't want to skip any messages.
 		ehClient.createReceiver(EventHubClient.DEFAULT_CONSUMER_GROUP_NAME, partitionId,
 				EventPosition.fromEnqueuedTime(Instant.now())).thenAcceptAsync(receiver -> {
-					System.out.println(String.format("Starting receive loop on partition: %s", partitionId));
-					System.out.println(String.format("Reading messages sent since: %s", Instant.now().toString()));
+					LOGGER.info("Starting receive loop on partition:{}", partitionId);
+					LOGGER.info("Reading messages sent since: %s", Instant.now().toString());
 
 					receivers.add(receiver);
 
@@ -59,27 +64,27 @@ public class ReadDeviceToCloudMessages {
 							// If there is data in the batch, process it.
 							if (receivedEvents != null) {
 								for (EventData receivedEvent : receivedEvents) {
-									System.out.println(String.format("Telemetry received:\n %s",
-											new String(receivedEvent.getBytes(), Charset.defaultCharset())));
-									System.out.println(String.format("Application properties (set by device):\n%s",receivedEvent.getProperties().toString()));
-									System.out.println(String.format("System properties (set by IoT Hub):\n%s\n",receivedEvent.getSystemProperties().toString()));
+									LOGGER.info("Telemetry received:\n {}",
+											new String(receivedEvent.getBytes(), Charset.defaultCharset()));
+									LOGGER.info("Application properties (set by device):\n{}",receivedEvent.getProperties().toString());
+									LOGGER.info("System properties (set by IoT Hub):\n{}\n",receivedEvent.getSystemProperties().toString());
 								}
 							}
 						} catch (EventHubException e) {
-							System.out.println("Error reading EventData");
+							LOGGER.error("Error reading EventData",e);
 						}
 					}
 				}, executorService);
 	}
 
 	public static void main(String[] args)
-			throws EventHubException, ExecutionException, InterruptedException, IOException, URISyntaxException {
+			throws EventHubException, Exception {
 
 		final ConnectionStringBuilder connStr = new ConnectionStringBuilder()
-				.setEndpoint(new URI(eventHubsCompatibleEndpoint))
-				.setEventHubName(eventHubsCompatiblePath)
-				.setSasKeyName(iotHubSasKeyName)
-				.setSasKey(iotHubSasKey);
+				.setEndpoint(new URI(config.getProperty(EVENTHUB_COMTAPIBLE_ENPOINT, String.class)))
+				.setEventHubName(config.getProperty(EVENTHUB_COMPATIBLE_PATH, String.class))
+				.setSasKeyName(config.getProperty(IOT_HUB_SAS_KEY_NAME,String.class))
+				.setSasKey(config.getProperty(IOT_HUB_SAS_KEY,String.class));
 
 		// Create an EventHubClient instance to connect to the
 		// IoT Hub Event Hubs-compatible endpoint.

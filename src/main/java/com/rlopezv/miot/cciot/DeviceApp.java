@@ -1,8 +1,12 @@
 package com.rlopezv.miot.cciot;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.microsoft.azure.iot.service.exceptions.IotHubException;
 import com.microsoft.azure.iot.service.sdk.Device;
 import com.microsoft.azure.iot.service.sdk.RegistryManager;
+import com.rlopezv.miot.cciot.util.PropertiesUtil;
 
 /**
  * Hello world!
@@ -11,26 +15,29 @@ import com.microsoft.azure.iot.service.sdk.RegistryManager;
 public class DeviceApp
 {
 
-	private static final String CONNECTION_STRING = "HostName=IoTHub-rlv.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=Pp/0AdlXDDOaelMLyYq4mLtk+PrmHmDdSve2LXUDFv4=";
-	private static final String DEVICE_ID = "rlv-java-device";
+	private static final Logger LOGGER = LoggerFactory.getLogger(DeviceApp.class);
+	private static final String IOT_HUB_CONNECTION_STRING = "IOT_HUB_CONNECTION_STRING";
+	private static final String DEVICE_ID = "DEVICE_ID";
 
+	private static final PropertiesUtil config = new PropertiesUtil();
+	
 	public static void main( String[] args ) throws Exception
 	{
 
+		String deviceId = config.getProperty(DEVICE_ID, String.class);
+		RegistryManager registryManager = RegistryManager.createFromConnectionString(config.getProperty(IOT_HUB_CONNECTION_STRING,String.class));
 
-		RegistryManager registryManager = RegistryManager.createFromConnectionString(CONNECTION_STRING);
-
-		Device device = Device.createFromId(DEVICE_ID, null, null);
+		Device device = Device.createFromId(deviceId, null, null);
 		try {
 			device = registryManager.addDevice(device);
 		} catch (IotHubException iote) {
 			try {
-				device = registryManager.getDevice(DEVICE_ID);
+				device = registryManager.getDevice(deviceId);
 			} catch (IotHubException iotf) {
 				iotf.printStackTrace();
 			}
 		}
-		System.out.println("Device id: " + device.getDeviceId());
-		System.out.println("Device key: " + device.getPrimaryKey());
+		LOGGER.info("Device id {}", device.getDeviceId());
+		LOGGER.info("Device Key {}", device.getPrimaryKey());
 	}
 }

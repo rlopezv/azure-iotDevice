@@ -6,36 +6,32 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.microsoft.azure.sdk.iot.device.DeviceClient;
 import com.microsoft.azure.sdk.iot.device.IotHubClientProtocol;
 import com.microsoft.azure.sdk.iot.device.IotHubEventCallback;
 import com.microsoft.azure.sdk.iot.device.IotHubStatusCode;
 import com.microsoft.azure.sdk.iot.device.Message;
+import com.rlopezv.miot.cciot.util.PropertiesUtil;
 
 public class SimulatedDevice {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(DeviceApp.class);
+	private static final PropertiesUtil config = new PropertiesUtil();
 
 	// The device connection string to authenticate the device with your IoT hub.
 	// Using the Azure CLI:
 	// az iot hub device-identity show-connection-string --hub-name {YourIoTHubName}
 	// --device-id MyJavaDevice --output table
-	private static String CONNECTION_STRING = "HostName=IoTHub-rlv.azure-devices.net;DeviceId=rlv-java-device;SharedAccessKey=CbSE9ews5/7AouPx8B7C/w==";
-
+	private static String DEVICE_CONNECTION_STRING = "DEVICE_CONNECTION_STRING";
+	private static final String DEVICE_ID = "DEVICE_ID";
 	// Using the MQTT protocol to connect to IoT Hub
 	private static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
 	private static DeviceClient client;
-
-	// Specify the telemetry to send to your IoT hub.
-	private static class TelemetryDataPoint {
-		public double temperature;
-		public double humidity;
-
-		// Serialize object to JSON format.
-		public String serialize() {
-			Gson gson = new Gson();
-			return gson.toJson(this);
-		}
-	}
 
 	// Print the acknowledgement received from IoT Hub for the telemetry message
 	// sent.
@@ -53,6 +49,7 @@ public class SimulatedDevice {
 	}
 
 	private static class MessageSender implements Runnable {
+		Object lockobj = new Object();
 		@Override
 		public void run() {
 			try {
@@ -65,41 +62,34 @@ public class SimulatedDevice {
 					// Simulate telemetry.
 					double currentTemperature = minTemperature + rand.nextDouble() * 15;
 					double currentHumidity = minHumidity + rand.nextDouble() * 20;
-					TelemetryDataPoint telemetryDataPoint = new TelemetryDataPoint();
-					telemetryDataPoint.temperature = currentTemperature;
-					telemetryDataPoint.humidity = currentHumidity;
+					TelemetryMessage telemetryMessage = new TelemetryMessage().withDeviceId(config.getProperty(DEVICE_ID, String.class)).withHumidity(currentHumidity).withTemperature(currentTemperature);
 
 					// Add the telemetry to the message body as JSON.
-					String msgStr = telemetryDataPoint.serialize();
+					String msgStr = telemetryMessage.serialize();
 					Message msg = new Message(msgStr);
 
 					// Add a custom application property to the message.
 					// An IoT hub can filter on these properties without access to the message body.
 					msg.setProperty("temperatureAlert", currentTemperature > 30 ? "true" : "false");
 
-					System.out.println("Sending message: " + msgStr);
-
-					Object lockobj = new Object();
+					LOGGER.info("Sending message: {}", msgStr);
 
 					// Send the message.
 					EventCallback callback = new EventCallback();
 					client.sendEventAsync(msg, callback, lockobj);
 
-					synchronized (lockobj) {
-						lockobj.wait();
-					}
-					Thread.sleep(1000);
+					Thread.sleep(10000);
 				}
-			} catch (InterruptedException e) {
-				System.out.println("Finished.");
+			} catch (InterruptedException | ConfigurationException e) {
+				LOGGER.error("Finished",e);
 			}
 		}
 	}
 
-	public static void main(String[] args) throws IOException, URISyntaxException {
+	public static void main(String[] args) throws Exception {
 
 		// Connect to the IoT hub.
-		client = new DeviceClient(CONNECTION_STRING, protocol);
+		client = new DeviceClient(config.getProperty(DEVICE_CONNECTION_STRING,String.class), protocol);
 		client.open();
 
 		// Create new thread and start sending messages
